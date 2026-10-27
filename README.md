@@ -1,138 +1,101 @@
-# 8051 Digital Clock
+# STC89C52RC Digital Clock
 
-A simple digital clock implemented with an **STC89C52RC (8051)** microcontroller using **Keil C51**, **Timer0 interrupt**, and an **LCD1602** display.
+A digital clock project based on the **STC89C52RC (8051-compatible microcontroller)**, developed using C and Keil C51. The project integrates LCD display, Timer0 interrupts, button-based time and date adjustment, and UART serial transmission.
 
-This project was developed as an embedded C practice project to learn MCU timer interrupts, time/date counting, and LCD1602 control.
+The clock was developed and tested on a physical development board.
 
 ## Features
 
-* Digital clock display: `HH:MM:SS`
-* Date display: `YYYY/MM/DD`
-* AM/PM display
-* Timer0 interrupt-based time counting
-* Automatic seconds, minutes, and hours carry
-* Automatic day/month/year carry
-* Different month lengths
-* Leap-year detection
-* LCD1602 display
+- **Real-Time Clock Display**: Displays time in 12-hour format with AM/PM indication.
+- **Date Display**: Displays year, month, and day on an LCD1602.
+- **Timer0 Interrupt**: Uses Timer0 interrupts for periodic timekeeping.
+- **Button-Based Adjustment**: Supports manual adjustment of hours, minutes, seconds, AM/PM, year, month, and day.
+- **Calendar Rollover**: Automatically updates the date when the clock crosses midnight, including month and year transitions.
+- **Leap Year Handling**: Implements leap-year rules for February during automatic date rollover and manual day adjustment.
+- **UART Serial Transmission**: Sends the current time (`HH:MM:SS`) to a serial terminal when the transmission button is pressed.
+- **Modular Code Structure**: Separates LCD, timer, delay, and UART functions into individual modules.
 
-## Hardware
+## Hardware and Development Environment
 
-* STC89C52RC / 8051 MCU
-* 11.0592 MHz crystal oscillator
-* LCD1602
-* Minimum system circuit
-* 5V power supply
+- **Microcontroller**: STC89C52RC
+- **Architecture**: 8051-compatible 8-bit MCU
+- **Crystal Frequency**: 11.0592 MHz
+- **Timer Configuration**: Timer0, Mode 1, 16-bit timer, 12T mode
+- **Display**: LCD1602
+- **Development IDE**: Keil µVision / Keil C51
+- **Programming Language**: C
+- **Serial Communication**: UART, 4800 bps
 
-## Software
+## Technical Implementation
 
-* C language
-* Keil C51
-* 8051 Timer0
-* Interrupt
-* LCD1602 driver
+### 1. Timer0 Interrupt-Based Timekeeping
 
-## Timer0 Configuration
+Timer0 is configured in 16-bit Mode 1. With an 11.0592 MHz crystal and 12T operation, the timer is reloaded with an initial value of 64614 to generate an approximately 1 ms interval.
 
-The MCU uses an **11.0592 MHz crystal** in 12T mode.
+The interrupt service routine counts timer interrupts and updates the clock every 1000 ticks.
 
-The timer tick period is approximately:
+### 2. Button Input and State Machine
 
-```text
-12 / 11.0592 MHz ≈ 1.085 μs
-```
+A switch-case state machine manages the clock-setting process. Buttons are used to increment values, decrement values, and move between configuration states.
 
-For approximately 1 ms timer overflow:
+A software debounce delay is applied to button inputs to reduce false triggers caused by mechanical contact bounce.
 
-```text
-1 ms / 1.085 μs ≈ 922 counts
-```
+### 3. Calendar Rollover and Leap Year Calculation
 
-Therefore, the Timer0 initial value is:
+The calendar logic handles different month lengths and Gregorian leap-year rules. When the clock reaches midnight, the date is incremented and the month or year is updated when necessary.
 
-```text
-65536 - 922 = 64614
-```
+The current implementation supports manual day adjustment based on the selected month and year. Automatic validation of the existing day value after changing the year or month is not yet implemented.
 
-The timer is configured in 16-bit mode:
+### 4. UART Serial Transmission
 
-```c
-TMOD &= 0xF0;
-TMOD |= 0x01;
-```
+The UART is configured for 4800 bps. When the transmission button is pressed, the microcontroller sends the current time in the following format:
 
-Timer0 generates an interrupt approximately every 1 ms.
+`HH:MM:SS`
 
-A software counter is then used to accumulate 1000 timer interrupts:
-
-```c
-T0Count++;
-
-if(T0Count >= 1000)
-{
-    T0Count = 0;
-    sec++;
-}
-```
-
-This produces an approximately 1-second time base.
-
-## Time and Date Counting
-
-The program handles the following time carry operations:
-
-```text
-60 seconds → 1 minute
-60 minutes → 1 hour
-12 hours   → next AM/PM period
-End of month → next month
-December   → next year
-```
-
-The program also determines whether February has 28 or 29 days based on the Gregorian leap-year rule.
+The message ends with carriage return and line feed (`\r\n`) for convenient display in a serial terminal.
 
 ## Project Structure
 
 ```text
-8051-Digital-Clock/
-│
+STC89C52RC-Digital-Clock/
 ├── main.c
 ├── LCD1602.c
 ├── LCD1602.h
 ├── Delay.c
 ├── Delay.h
-└── README.md
+├── Timer0.c
+├── Timer0.h
+├── UART.c
+└── UART.h
 ```
 
-## Example Display
+## Build and Run
 
-```text
-PM: 00:54:04
-      2026/10/09
-```
+1. Open the project in Keil µVision with the Keil C51 toolchain.
+2. Add all required `.c` source files to the project and configure the target for the STC89C52RC.
+3. Build the project and check the compilation results.
+4. Download the generated firmware to the microcontroller using a compatible programmer.
+5. Connect the LCD1602, buttons, and UART interface according to the hardware configuration.
+6. Use the buttons to adjust the time and date.
+7. Press the UART transmission button and observe the output with a serial terminal configured for 4800 bps.
 
-## Learning Goals
+## Learning Outcomes
 
-This project was created to practice:
+Through this project, I gained hands-on experience with:
 
-1. 8051 MCU programming
-2. Timer0 configuration
-3. Interrupt handling
-4. Timer overflow calculation
-5. Embedded C programming
-6. LCD1602 interfacing
-7. Time and date state management
-8. Conditional logic and modulo operations
+- 8051-compatible MCU programming using C
+- Timer configuration and interrupt service routines
+- GPIO input handling and software debouncing
+- LCD1602 interfacing
+- State-machine-based application logic
+- Calendar rollover and leap-year calculation
+- UART initialization and serial data transmission
+- Modular firmware development and hardware testing
 
 ## Future Improvements
 
-Possible improvements for this project include:
+- Validate the day value automatically when the year or month changes.
+- Improve shared-variable handling between the main loop and interrupt service routines.
+- Expand serial communication functionality and error handling.
+- Explore additional MCU platforms and peripheral interfaces.
 
-* Add physical buttons for time/date adjustment
-* Improve timer accuracy using a more precise timer calculation
-* Add 12/24-hour display mode
-* Refactor time/date handling into independent functions
-
-## Author
-
-This project is part of my embedded C / MCU learning portfolio.
